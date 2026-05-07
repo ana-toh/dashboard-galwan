@@ -4,6 +4,7 @@ import { AlertTriangle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { logger } from "@/lib/logger";
 
 interface Props {
   children: ReactNode;
@@ -26,10 +27,8 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    if (import.meta.env.DEV) {
-      console.error("[ErrorBoundary]", error.name, error.message);
-      console.error("Stack:", errorInfo.componentStack);
-    }
+    logger.error("[ErrorBoundary]", error.name, error.message);
+    logger.error("Stack:", errorInfo.componentStack);
   }
 
   handleReset = () => {

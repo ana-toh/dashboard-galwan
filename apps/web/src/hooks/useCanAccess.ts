@@ -14,12 +14,12 @@ export const useCanAccess = (): CanAccessResult => {
   const { data: profile, isLoading } = useCurrentUser()
 
   const isAdmin = profile?.role === "admin"
-  const isInactive = Boolean(profile && profile.role === "colaborador" && !profile.isActive)
+  const isInactive = Boolean(profile && !profile.isActive)
 
   const canAccess = (area: AreaSlug): boolean => {
     if (!profile) return false
-    if (isAdmin) return true
     if (!profile.isActive) return false
+    if (isAdmin) return true
     return profile.permittedAreas.includes(area)
   }
 

@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client"
 import { getChangedUpdateKeys } from "@/lib/changed-update-keys"
 import { AppError } from "@/lib/errors"
+import { logger } from "@/lib/logger"
 import { formatLogDateTime, logEvent } from "@/services/logs"
 
 const CORRETOR_FIELD_LABEL: Record<string, string> = {
@@ -113,7 +114,7 @@ export async function fetchCorretores(): Promise<Corretor[]> {
 export async function createCorretor(input: CreateCorretorInput): Promise<void> {
   const { error } = await supabase.from("brokers").insert(input)
   if (error) {
-    console.error("[createCorretor] Supabase error:", error)
+    logger.error("[createCorretor] Supabase error:", error)
     throw new AppError(`Falha ao cadastrar corretor: ${error.message}`, { cause: error })
   }
   const {
@@ -223,7 +224,7 @@ export async function saveAvailabilitiesForDay(
 
   const { error } = await supabase.from("broker_availability").insert(rows)
   if (error) {
-    console.error("Falha ao salvar disponibilidades:", { rows, supabaseError: error })
+    logger.error("Falha ao salvar disponibilidades:", { rows, supabaseError: error })
     throw new AppError(
       `Falha ao salvar disponibilidades: ${error.message}${error.hint ? ` (${error.hint})` : ""}`,
       { cause: error },

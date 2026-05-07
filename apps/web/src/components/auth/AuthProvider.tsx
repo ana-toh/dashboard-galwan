@@ -2,7 +2,9 @@ import { useEffect, useState } from "react"
 import type { ReactNode } from "react"
 import type { Session, User } from "@supabase/supabase-js"
 
+import { supabase } from "@/integrations/supabase/client"
 import { AuthContext } from "@/lib/auth-context"
+import { logger } from "@/lib/logger"
 import * as authService from "@/services/auth"
 
 const MAX_SESSION_MS = 3 * 60 * 60 * 1000
@@ -15,7 +17,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     authService.getSession().then(({ session: s, error }) => {
       if (error) {
-        console.error("[AuthProvider] Falha ao recuperar sessão:", error.message)
+        logger.error("[AuthProvider] Falha ao recuperar sessão:", error.message)
       }
       setSession(s)
       setUser(s?.user ?? null)
@@ -68,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session])
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await authService.signInWithPassword({ email, password })
+    const { user: signedUser, error } = await authService.signInWithPassword({ email, password })
 
     if (error) {
       const msg = error.message.toLowerCase()
@@ -84,13 +86,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: "Não foi possível fazer login. Tente novamente." }
     }
 
+    if (signedUser) {
+      const { data: profile, error: profileError } = await supabase
+        .from("users")
+        .select("is_active")
+        .eq("id", signedUser.id)
+        .maybeSingle()
+
+      if (profileError) {
+        logger.error("[AuthProvider] Falha ao validar perfil pós-login:", profileError.message)
+        await authService.signOut()
+        setSession(null)
+        setUser(null)
+        return { error: "Não foi possível validar sua conta. Tente novamente." }
+      }
+
+      if (!profile || profile.is_active === false) {
+        await authService.signOut()
+        setSession(null)
+        setUser(null)
+        return { error: "Sua conta está desativada. Entre em contato com o administrador." }
+      }
+    }
+
     return { error: null }
   }
 
   const signOut = async () => {
     const { error } = await authService.signOut()
     if (error) {
-      console.error("[AuthProvider] Falha ao fazer logout:", error.message)
+      logger.error("[AuthProvider] Falha ao fazer logout:", error.message)
     }
     setSession(null)
     setUser(null)

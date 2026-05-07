@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
+import { logger } from "@/lib/logger"
 import {
   fetchCorretores,
   createCorretor,
@@ -45,7 +46,7 @@ export function useCorretores() {
       toast.success("Corretor cadastrado!")
     },
     onError: (err) => {
-      console.error("Erro ao cadastrar corretor:", err.cause ?? err)
+      logger.error("Erro ao cadastrar corretor:", err.cause ?? err)
       toast.error(err.message || "Erro ao cadastrar corretor.")
     },
   })

@@ -6,6 +6,7 @@ import {
   logPlanilhaCorretoresUpload,
   type SaveAvailabilitiesForDayInput,
 } from "@/services/corretores"
+import { logger } from "@/lib/logger"
 import {
   extractTimesFromRowSlice,
   parseAvailabilityDateCell,
@@ -181,7 +182,7 @@ export function useSpreadsheetImport(
       } else {
         const total = Object.values(previewData.groupedData).length
         const ok = total - failures.length
-        console.error("Falhas na importação:", failures)
+        logger.error("Falhas na importação:", failures)
         const firstMsg =
           failures[0].error instanceof Error ? failures[0].error.message : "Erro desconhecido"
         toast.error(
@@ -189,7 +190,7 @@ export function useSpreadsheetImport(
         )
       }
     } catch (err) {
-      console.error("Erro durante a importação:", err)
+      logger.error("Erro durante a importação:", err)
       toast.error("Erro durante a importação.")
     } finally {
       setIsProcessing(false)

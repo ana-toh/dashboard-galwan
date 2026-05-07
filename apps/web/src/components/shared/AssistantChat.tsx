@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { supabaseEnv } from "@/integrations/supabase/client";
+import { logger } from "@/lib/logger";
 import { cn } from "@/lib/utils";
 import { getSession } from "@/services/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -96,7 +97,7 @@ export function AssistantChat({ userEmail }: AssistantChatProps) {
       const data = await response.json();
 
       if (!response.ok) {
-        if (import.meta.env.DEV) console.error("[AssistantChat] Server error:", data.error);
+        logger.error("[AssistantChat] Server error:", data.error);
         throw new Error("Falha ao conectar com o assistente");
       }
 
@@ -114,7 +115,7 @@ export function AssistantChat({ userEmail }: AssistantChatProps) {
 
       void refetchHistory().then(() => setPending([]));
     } catch (error) {
-      if (import.meta.env.DEV) console.error("[AssistantChat]", error);
+      logger.error("[AssistantChat]", error);
       setPending((prev) => [
         ...prev,
         {
@@ -143,7 +144,7 @@ export function AssistantChat({ userEmail }: AssistantChatProps) {
       await refetchHistory();
       toast.success("Histórico apagado.");
     } catch (error) {
-      if (import.meta.env.DEV) console.error("[AssistantChat] clear", error);
+      logger.error("[AssistantChat] clear", error);
       toast.error("Não foi possível apagar o histórico.");
     } finally {
       setIsClearing(false);

@@ -10,18 +10,7 @@
 //   - WEBHOOK_CHAT_APP   (URL do webhook n8n)
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4"
-
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-}
-
-const json = (status: number, body: Record<string, unknown>) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-  })
+import { handlePreflight, jsonResponse } from "../_shared/cors.ts"
 
 interface ChatPayload {
   message: string
@@ -47,7 +36,9 @@ const extractResponseText = (raw: string): string => {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS_HEADERS })
+  const preflight = handlePreflight(req)
+  if (preflight) return preflight
+  const json = (status: number, body: Record<string, unknown>) => jsonResponse(req, status, body)
   if (req.method !== "POST") return json(405, { error: "Method not allowed" })
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")
@@ -92,16 +83,48 @@ Deno.serve(async (req) => {
     return json(400, { error: "Payload inválido" })
   }
 
-  const webhookRes = await fetch(webhookUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  })
+  const WEBHOOK_TIMEOUT_MS = 25_000
+  const startedAt = Date.now()
+  let webhookRes: Response
+  let raw: string
 
-  const raw = await webhookRes.text()
+  try {
+    webhookRes = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
+    })
+    raw = await webhookRes.text()
+  } catch (err) {
+    const durationMs = Date.now() - startedAt
+    const isTimeout = err instanceof DOMException && err.name === "TimeoutError"
+    const kind = isTimeout ? "timeout" : "network"
+    console.error("[assistant-chat] webhook failure", {
+      kind,
+      durationMs,
+      message: err instanceof Error ? err.message : String(err),
+    })
+    return json(isTimeout ? 504 : 502, {
+      error: isTimeout
+        ? "O assistente demorou demais para responder. Tente novamente."
+        : "Não foi possível conectar ao assistente. Tente novamente.",
+      code: isTimeout ? "WEBHOOK_TIMEOUT" : "WEBHOOK_NETWORK_ERROR",
+    })
+  }
 
   if (!webhookRes.ok) {
-    return json(502, { error: "Webhook retornou erro", status: webhookRes.status })
+    console.error("[assistant-chat] webhook http error", {
+      kind: "http",
+      status: webhookRes.status,
+      durationMs: Date.now() - startedAt,
+      body: raw.slice(0, 500),
+    })
+    return json(502, {
+      error: "O assistente retornou um erro. Tente novamente em instantes.",
+      code: "WEBHOOK_HTTP_ERROR",
+      status: webhookRes.status,
+    })
   }
 
   return json(200, { response: extractResponseText(raw) })

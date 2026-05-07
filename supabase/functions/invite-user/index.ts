@@ -15,6 +15,7 @@
 //   - INVITE_REDIRECT_TO   (ex.: https://galwan.theoutsiderhub.com/definir-senha)
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4"
+import { handlePreflight, jsonResponse } from "../_shared/cors.ts"
 
 const AREA_SLUGS = ["prompt", "brokers", "chat", "insights", "projects", "leads"] as const
 type AreaSlug = typeof AREA_SLUGS[number]
@@ -26,23 +27,13 @@ interface InvitePayload {
   permittedAreas: AreaSlug[]
 }
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-}
-
-const json = (status: number, body: Record<string, unknown>) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-  })
-
 const isAreaSlug = (value: unknown): value is AreaSlug =>
   typeof value === "string" && (AREA_SLUGS as readonly string[]).includes(value)
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS_HEADERS })
+  const preflight = handlePreflight(req)
+  if (preflight) return preflight
+  const json = (status: number, body: Record<string, unknown>) => jsonResponse(req, status, body)
   if (req.method !== "POST") return json(405, { error: "Method not allowed" })
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")
