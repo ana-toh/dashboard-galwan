@@ -1,12 +1,14 @@
 import path from 'node:path'
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+import { visualizer } from 'rollup-plugin-visualizer'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, path.resolve(__dirname, '.'), '')
   const siteUrl = env.VITE_PUBLIC_SITE_URL?.replace(/\/$/, '') ?? ''
   const ogImageUrl = siteUrl ? `${siteUrl}/galwan-icon.png` : '/galwan-icon.png'
+  const analyze = env.ANALYZE === 'true'
 
   return {
     plugins: [
@@ -17,6 +19,16 @@ export default defineConfig(({ mode }) => {
           return html.replaceAll('__OG_IMAGE_URL__', ogImageUrl)
         },
       },
+      ...(analyze
+        ? [
+            visualizer({
+              filename: 'dist/bundle-stats.html',
+              gzipSize: true,
+              brotliSize: true,
+              open: true,
+            }),
+          ]
+        : []),
     ],
     resolve: {
       alias: {

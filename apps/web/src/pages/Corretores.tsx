@@ -170,12 +170,11 @@ export function Corretores() {
               const dateStr = dayDialog.selectedDate
                 ? format(dayDialog.selectedDate, "yyyy-MM-dd")
                 : ""
-              const corretoresNoDia = corretores.filter((c) =>
-                c.disponibilidades.some((d) => d.available_date === dateStr),
-              )
-              const corretoresSemDisp = corretores.filter(
-                (c) => !c.disponibilidades.some((d) => d.available_date === dateStr),
-              )
+              const corretoresNoDia = dayDialog.selectedDate
+                ? getCorretoresForDate(dayDialog.selectedDate)
+                : []
+              const noDiaIds = new Set(corretoresNoDia.map((c) => c.id))
+              const corretoresSemDisp = corretores.filter((c) => !noDiaIds.has(c.id))
 
               return (
                 <>
@@ -841,7 +840,7 @@ export function Corretores() {
                             </tr>
                           </thead>
                           <tbody>
-                            {dialogs.previewData.valid.map((item, idx) => (
+                            {dialogs.previewData.valid.slice(0, 100).map((item, idx) => (
                               <tr key={idx} className="border-t">
                                 <td className="p-2">{item.corretorNome}</td>
                                 <td className="p-2">{item.displayDate}</td>
@@ -853,8 +852,9 @@ export function Corretores() {
                         </table>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Lista completa: {dialogs.previewData.valid.length} linha(s). Role a tabela se
-                        necessário.
+                        {dialogs.previewData.valid.length > 100
+                          ? `Mostrando 100 de ${dialogs.previewData.valid.length} linha(s). Todas serão importadas.`
+                          : `Lista completa: ${dialogs.previewData.valid.length} linha(s). Role a tabela se necessário.`}
                       </p>
                     </div>
                   )}
@@ -873,7 +873,7 @@ export function Corretores() {
                             </tr>
                           </thead>
                           <tbody>
-                            {dialogs.previewData.errors.map((error, idx) => (
+                            {dialogs.previewData.errors.slice(0, 100).map((error, idx) => (
                               <tr key={idx} className="border-t border-destructive/20">
                                 <td className="p-2">{error.linha}</td>
                                 <td className="p-2 text-destructive">{error.motivo}</td>
@@ -882,6 +882,11 @@ export function Corretores() {
                           </tbody>
                         </table>
                       </div>
+                      {dialogs.previewData.errors.length > 100 && (
+                        <p className="text-xs text-muted-foreground">
+                          Mostrando 100 de {dialogs.previewData.errors.length} erro(s).
+                        </p>
+                      )}
                     </div>
                   )}
                   <div className="rounded-lg bg-muted/50 p-4">

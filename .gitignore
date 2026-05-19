@@ -10,5 +10,6 @@ coverage
 .cursor/
 .DS_Store
 tasks/
+docs/
 
 *.log
