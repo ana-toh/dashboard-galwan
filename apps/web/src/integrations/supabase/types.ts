@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       broker_availability: {
@@ -22,6 +47,7 @@ export type Database = {
           end_time: string | null
           id: string
           is_available: boolean | null
+          queue_position: number | null
           start_time: string | null
           updated_at: string | null
         }
@@ -32,6 +58,7 @@ export type Database = {
           end_time?: string | null
           id?: string
           is_available?: boolean | null
+          queue_position?: number | null
           start_time?: string | null
           updated_at?: string | null
         }
@@ -42,6 +69,7 @@ export type Database = {
           end_time?: string | null
           id?: string
           is_available?: boolean | null
+          queue_position?: number | null
           start_time?: string | null
           updated_at?: string | null
         }
@@ -88,27 +116,6 @@ export type Database = {
           last_name?: string | null
           updated_at?: string | null
           whatsapp?: string | null
-        }
-        Relationships: []
-      }
-      dash_admins: {
-        Row: {
-          created_at: string
-          email: string
-          id: string
-          job: string
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          id: string
-          job: string
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          id?: string
-          job?: string
         }
         Relationships: []
       }
@@ -277,78 +284,6 @@ export type Database = {
         }
         Relationships: []
       }
-      n8n_history_final: {
-        Row: {
-          id: number
-          message: Json
-          session_id: string
-        }
-        Insert: {
-          id?: number
-          message: Json
-          session_id: string
-        }
-        Update: {
-          id?: number
-          message?: Json
-          session_id?: string
-        }
-        Relationships: []
-      }
-      n8n_history_final_2: {
-        Row: {
-          id: number
-          message: Json
-          session_id: string
-        }
-        Insert: {
-          id?: number
-          message: Json
-          session_id: string
-        }
-        Update: {
-          id?: number
-          message?: Json
-          session_id?: string
-        }
-        Relationships: []
-      }
-      n8n_history_final_3: {
-        Row: {
-          id: number
-          message: Json
-          session_id: string
-        }
-        Insert: {
-          id?: number
-          message: Json
-          session_id: string
-        }
-        Update: {
-          id?: number
-          message?: Json
-          session_id?: string
-        }
-        Relationships: []
-      }
-      n8n_history_final_4: {
-        Row: {
-          id: number
-          message: Json
-          session_id: string
-        }
-        Insert: {
-          id?: number
-          message: Json
-          session_id: string
-        }
-        Update: {
-          id?: number
-          message?: Json
-          session_id?: string
-        }
-        Relationships: []
-      }
       project_images: {
         Row: {
           created_at: string
@@ -471,30 +406,6 @@ export type Database = {
         }
         Relationships: []
       }
-      temporary_broker_table: {
-        Row: {
-          created_at: string | null
-          id: number
-          index: number | null
-          name: string
-          phone: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: number
-          index?: number | null
-          name: string
-          phone?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: number
-          index?: number | null
-          name?: string
-          phone?: string | null
-        }
-        Relationships: []
-      }
       users: {
         Row: {
           created_at: string
@@ -531,7 +442,19 @@ export type Database = {
     }
     Functions: {
       can_access_area: { Args: { area: string }; Returns: boolean }
-      is_admin: { Args: never; Returns: boolean }
+      get_hallucination_rate: {
+        Args: { p_end?: string; p_start?: string }
+        Returns: {
+          rate: number
+          total_incorrect: number
+          total_messages: number
+        }[]
+      }
+      get_next_corretor: { Args: never; Returns: Json }
+      is_active_user: { Args: { uid: string }; Returns: boolean }
+      is_admin:
+        | { Args: never; Returns: boolean }
+        | { Args: { uid: string }; Returns: boolean }
       match_documents: {
         Args: { filter?: Json; match_count?: number; query_embedding: string }
         Returns: {
@@ -561,6 +484,7 @@ export type Database = {
           status: Database["public"]["Enums"]["project_status"]
         }[]
       }
+      user_has_area: { Args: { area: string; uid: string }; Returns: boolean }
     }
     Enums: {
       alert_severity: "Alto" | "Médio" | "Baixo"
@@ -705,6 +629,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       alert_severity: ["Alto", "Médio", "Baixo"],
