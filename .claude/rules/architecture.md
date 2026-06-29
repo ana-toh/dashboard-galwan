@@ -53,8 +53,10 @@ apps/web/src/
 
 ### Ambiente
 
-- Frontend: `apps/web/.env` (nao versionado), `apps/web/.env.example` (versionado, sem valores reais).
-- Root: `.env` (nao versionado), `.env.example` (versionado, sem valores reais).
+- **Arquivo unico na raiz**: `.env` (nao versionado) + `.env.example` (versionado, sem valores reais). Frontend (Vite) e scripts Node da raiz (`src/`) leem o **mesmo** arquivo.
+  - O Vite le da raiz via `envDir` em `apps/web/vite.config.ts` (`path.resolve(__dirname, '../..')`).
+  - Padronize todas as variaveis com prefixo `VITE_` (ex.: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`). O Vite so injeta no bundle do cliente variaveis com esse prefixo.
+  - Secrets server-side (se um dia necessarios) vao no mesmo `.env` **sem** o prefixo `VITE_` — assim ficam disponiveis ao `src/` e nunca vazam pro frontend.
 - **NUNCA** commitar `.env` com valores reais.
 
 ## 5) Services (Use Cases no Frontend)

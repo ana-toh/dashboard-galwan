@@ -882,11 +882,11 @@ export function Corretores() {
                           </tbody>
                         </table>
                       </div>
-                      {dialogs.previewData.errors.length > 100 && (
-                        <p className="text-xs text-muted-foreground">
-                          Mostrando 100 de {dialogs.previewData.errors.length} erro(s).
-                        </p>
-                      )}
+                      <p className="text-xs text-muted-foreground">
+                        {dialogs.previewData.errors.length > 100
+                          ? `Mostrando 100 de ${dialogs.previewData.errors.length} erro(s).`
+                          : `Lista completa: ${dialogs.previewData.errors.length} erro(s).`}
+                      </p>
                     </div>
                   )}
                   <div className="rounded-lg bg-muted/50 p-4">
