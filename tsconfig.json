@@ -8,6 +8,7 @@
     "moduleResolution": "nodenext",
     "skipLibCheck": true,
     "strict": true,
+    "rootDir": "./src",
     "outDir": "./dist"
   },
   "include": ["src"]
