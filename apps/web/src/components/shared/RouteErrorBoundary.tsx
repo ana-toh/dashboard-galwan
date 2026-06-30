@@ -1,12 +1,18 @@
+import { useEffect } from "react"
 import { useRouteError, useNavigate } from "react-router-dom"
 import { AlertTriangle } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { reportError } from "@/lib/logger"
 
 export function RouteErrorBoundary() {
   const error = useRouteError()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (error) reportError(error, { boundary: "RouteErrorBoundary" })
+  }, [error])
 
   const message =
     error instanceof Error ? error.message : "Ocorreu um erro inesperado."

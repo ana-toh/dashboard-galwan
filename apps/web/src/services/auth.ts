@@ -1,6 +1,7 @@
 import type { AuthError, EmailOtpType, Session, User } from "@supabase/supabase-js"
 
 import { supabase } from "@/integrations/supabase/client"
+import { AppError, ForbiddenError, isForbiddenSupabaseError } from "@/lib/errors"
 
 const EMAIL_OTP_TYPES = new Set<EmailOtpType>([
   "signup",
@@ -107,6 +108,30 @@ interface AuthResult {
 export const signInWithPassword = async ({ email, password }: SignInInput): Promise<AuthResult> => {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
   return { user: data.user, session: data.session, error }
+}
+
+export interface UserActiveStatus {
+  exists: boolean
+  isActive: boolean
+}
+
+/**
+ * Valida o perfil do usuário pós-login: existência e flag `is_active`.
+ * Lança `ForbiddenError`/`AppError` em falha de acesso/consulta (RLS, rede).
+ */
+export const fetchUserActiveStatus = async (userId: string): Promise<UserActiveStatus> => {
+  const { data, error } = await supabase
+    .from("users")
+    .select("is_active")
+    .eq("id", userId)
+    .maybeSingle()
+
+  if (error) {
+    if (isForbiddenSupabaseError(error)) throw new ForbiddenError(undefined, { cause: error })
+    throw new AppError("Falha ao validar perfil do usuário", { cause: error })
+  }
+
+  return { exists: Boolean(data), isActive: data?.is_active === true }
 }
 
 export const signOut = async (): Promise<{ error: AuthError | null }> => {

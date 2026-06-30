@@ -2,9 +2,8 @@ import { useEffect, useState } from "react"
 import type { ReactNode } from "react"
 import type { Session, User } from "@supabase/supabase-js"
 
-import { supabase } from "@/integrations/supabase/client"
 import { AuthContext } from "@/lib/auth-context"
-import { logger } from "@/lib/logger"
+import { logger, reportError } from "@/lib/logger"
 import * as authService from "@/services/auth"
 
 const MAX_SESSION_MS = 3 * 60 * 60 * 1000
@@ -87,25 +86,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (signedUser) {
-      const { data: profile, error: profileError } = await supabase
-        .from("users")
-        .select("is_active")
-        .eq("id", signedUser.id)
-        .maybeSingle()
-
-      if (profileError) {
-        logger.error("[AuthProvider] Falha ao validar perfil pós-login:", profileError.message)
+      try {
+        const { exists, isActive } = await authService.fetchUserActiveStatus(signedUser.id)
+        if (!exists || !isActive) {
+          await authService.signOut()
+          setSession(null)
+          setUser(null)
+          return { error: "Sua conta está desativada. Entre em contato com o administrador." }
+        }
+      } catch (err) {
+        reportError(err, { scope: "AuthProvider.validateProfile" })
         await authService.signOut()
         setSession(null)
         setUser(null)
         return { error: "Não foi possível validar sua conta. Tente novamente." }
-      }
-
-      if (!profile || profile.is_active === false) {
-        await authService.signOut()
-        setSession(null)
-        setUser(null)
-        return { error: "Sua conta está desativada. Entre em contato com o administrador." }
       }
     }
 

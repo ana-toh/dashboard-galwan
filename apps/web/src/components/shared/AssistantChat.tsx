@@ -7,11 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { supabaseEnv } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
 import { cn } from "@/lib/utils";
-import { getSession } from "@/services/auth";
-import { supabase } from "@/integrations/supabase/client";
+import { sendAssistantMessage } from "@/services/assistant";
 import { formatLogDateTime, logEvent } from "@/services/logs";
 import { useChatHistory } from "@/hooks/useChatHistory";
 import { deleteChatHistory } from "@/services/chat-history";
@@ -25,10 +23,6 @@ type Message = {
 interface AssistantChatProps {
   userEmail?: string;
 }
-
-const CHAT_URL = supabaseEnv.VITE_SUPABASE_FUNCTIONS_URL
-  ? `${supabaseEnv.VITE_SUPABASE_FUNCTIONS_URL}/assistant-chat`
-  : `${supabaseEnv.VITE_SUPABASE_URL}/functions/v1/assistant-chat`;
 
 export function AssistantChat({ userEmail }: AssistantChatProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -72,34 +66,10 @@ export function AssistantChat({ userEmail }: AssistantChatProps) {
     setIsLoading(true);
 
     try {
-      const { session } = await getSession();
-      if (!session) {
-        throw new Error("Você precisa estar autenticado para usar o assistente");
-      }
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      const email = user?.email ?? userEmail ?? "";
-
-      const response = await fetch(CHAT_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          message: trimmed,
-          userEmail: email,
-        }),
+      const { reply, email } = await sendAssistantMessage({
+        message: trimmed,
+        fallbackEmail: userEmail,
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        logger.error("[AssistantChat] Server error:", data.error);
-        throw new Error("Falha ao conectar com o assistente");
-      }
 
       const when = formatLogDateTime();
       void logEvent({
@@ -108,10 +78,7 @@ export function AssistantChat({ userEmail }: AssistantChatProps) {
         description: `O usuário ${email || "—"} enviou uma mensagem ao assistente em ${when}.`,
       });
 
-      setPending((prev) => [
-        ...prev,
-        { role: "assistant", content: data.response || "Sem resposta" },
-      ]);
+      setPending((prev) => [...prev, { role: "assistant", content: reply }]);
 
       void refetchHistory().then(() => setPending([]));
     } catch (error) {
