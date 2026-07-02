@@ -245,7 +245,7 @@ export type Database = {
         }
         Relationships: []
       }
-      n8n_assistant_dash_history: {
+      assistant_dash_history: {
         Row: {
           id: number
           message: Json

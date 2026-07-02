@@ -24,7 +24,7 @@ export async function fetchChatHistory(
   email: string,
 ): Promise<ChatHistoryMessage[]> {
   const { data, error } = await supabase
-    .from("n8n_assistant_dash_history")
+    .from("assistant_dash_history")
     .select("id, message")
     .eq("session_id", email)
     .order("id", { ascending: true })
@@ -69,7 +69,7 @@ const safeParse = (value: string): RawMessage | null => {
 
 export async function deleteChatHistory(email: string): Promise<void> {
   const { error } = await supabase
-    .from("n8n_assistant_dash_history")
+    .from("assistant_dash_history")
     .delete()
     .eq("session_id", email)
 

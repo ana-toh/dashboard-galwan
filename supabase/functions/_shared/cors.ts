@@ -1,6 +1,10 @@
+// Remove barra(s) final(is) para comparar origens de forma robusta
+// (o browser envia "https://app.com", mas o secret pode ter "https://app.com/").
+const stripTrailingSlash = (value: string): string => value.replace(/\/+$/, "")
+
 const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") ?? "")
   .split(",")
-  .map((s) => s.trim())
+  .map((s) => stripTrailingSlash(s.trim()))
   .filter(Boolean)
 
 const BASE_HEADERS = {
@@ -12,7 +16,7 @@ const BASE_HEADERS = {
 const resolveOrigin = (req: Request): string | null => {
   const origin = req.headers.get("Origin")
   if (!origin) return null
-  return ALLOWED_ORIGINS.includes(origin) ? origin : null
+  return ALLOWED_ORIGINS.includes(stripTrailingSlash(origin)) ? origin : null
 }
 
 export const corsHeaders = (req: Request): Record<string, string> => {

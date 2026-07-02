@@ -2,7 +2,7 @@
 //
 // Agente nativo do Dashboard Galwan (substitui o webhook do n8n).
 // Recebe { message, userEmail } do frontend, valida acesso, roda um agente
-// OpenAI (gpt-5-mini) com tool-calling e memória em n8n_assistant_dash_history,
+// OpenAI (gpt-5-mini) com tool-calling e memória em assistant_dash_history,
 // e retorna { response: string }.
 //
 // Secrets (Project Settings → Edge Functions):
@@ -194,7 +194,7 @@ const runTool = async (
 }
 
 // ---------------------------------------------------------------------------
-// Memória (n8n_assistant_dash_history — formato compatível com o frontend)
+// Memória (assistant_dash_history — formato compatível com o frontend)
 // ---------------------------------------------------------------------------
 
 interface HistoryRow {
@@ -203,7 +203,7 @@ interface HistoryRow {
 
 const loadHistory = async (admin: SupabaseClient, email: string): Promise<ChatMessage[]> => {
   const { data, error } = await admin
-    .from("n8n_assistant_dash_history")
+    .from("assistant_dash_history")
     .select("id, message")
     .eq("session_id", email)
     .order("id", { ascending: true })
@@ -229,14 +229,21 @@ const saveTurn = async (
   userMessage: string,
   aiMessage: string,
 ): Promise<void> => {
-  await admin.from("n8n_assistant_dash_history").insert([
+  await admin.from("assistant_dash_history").insert([
     {
       session_id: email,
       message: { type: "human", content: userMessage, additional_kwargs: {}, response_metadata: {} },
     },
     {
       session_id: email,
-      message: { type: "ai", content: aiMessage, tool_calls: [], additional_kwargs: {}, response_metadata: {} },
+      message: {
+        type: "ai",
+        content: aiMessage,
+        tool_calls: [],
+        additional_kwargs: {},
+        response_metadata: {},
+        invalid_tool_calls: [],
+      },
     },
   ])
 }
